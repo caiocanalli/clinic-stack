@@ -1,0 +1,7 @@
+version: '3.4'
+
+services:
+
+  clinic-service:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker

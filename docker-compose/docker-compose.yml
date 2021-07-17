@@ -1,0 +1,58 @@
+version: '3.4'
+
+services:
+
+  sql-server:
+    image: "mcr.microsoft.com/mssql/server"
+    container_name: sql-server
+    user: root
+    environment:
+      SA_PASSWORD: "Y0urP@sswordHere"
+      ACCEPT_EULA: "Y"
+    volumes:
+      - docker-volume:/var/opt/mssql/data
+      
+    ports:
+      - "5434:1433"
+    networks:
+      - docker-network
+
+  clinic-service:
+    build:
+      context: ../../clinic-service
+      dockerfile: src/Clinic.Services.Api/Dockerfile
+    container_name: clinic-service
+    ports:
+      - '5000:80'
+    networks:
+      - docker-network
+    depends_on:
+      - sql-server
+    healthcheck:
+      test: 'curl -s http://localhost:5000/api/health >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  clinic-app:
+    build:
+      context: ../../clinic-app
+      dockerfile: Dockerfile
+    container_name: clinic-app
+    volumes:
+      - docker-volume:/app
+      - docker-volume:/app/node_modules
+    ports:
+      - '8080:80'
+    networks:
+      - docker-network
+    depends_on:
+      - clinic-service
+
+networks:
+  docker-network:
+    driver: bridge
+
+volumes:
+  docker-volume:
+    driver: local
